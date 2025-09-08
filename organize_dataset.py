@@ -1,8 +1,7 @@
 import os
 import json
 import shutil
-
-base_dir = r"C:\Users\CHANDANA B R\OneDrive\Desktop\Project\Suryanamaskar"
+base_dir = r"C:\Users\CHANDANA B R\OneDrive\Desktop\pro\Project\Suryanamaskar"
 splits = ["train", "valid", "test"]
 
 for split in splits:

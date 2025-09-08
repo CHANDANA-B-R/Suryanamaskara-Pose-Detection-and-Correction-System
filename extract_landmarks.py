@@ -3,18 +3,15 @@ import csv
 import mediapipe as mp
 import cv2
 
-# ✅ Path to your organized dataset folder
-BASE_PATH = r"C:\Users\CHANDANA B R\OneDrive\Desktop\Project\Suryanamaskar"
-
-# Output CSV file
+# Path to your organized dataset folder
+BASE_PATH = r"C:\Users\CHANDANA B R\OneDrive\Desktop\pro\Project\Suryanamaskar"
 CSV_FILE = "pose_landmarks.csv"
 
-mp_pose = mp.solutions.pose
-pose = mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5)
-mp_drawing = mp.solutions.drawing_utils
+# Allowed image extensions
+IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png")
 
-def extract_landmarks(image_path):
-    """Extracts 33 pose landmarks from an image."""
+def extract_landmarks(image_path, pose):
+    """Extracts 33 pose landmarks (x, y, z, visibility) from an image."""
     image = cv2.imread(image_path)
     if image is None:
         print(f"⚠️ Could not read image {image_path}")
@@ -27,7 +24,7 @@ def extract_landmarks(image_path):
         print(f"⚠️ No pose detected in {image_path}")
         return None
 
-    # Flatten all (x, y, z, visibility) values into a single list
+    # Flatten landmarks into a single list
     landmarks = []
     for lm in results.pose_landmarks.landmark:
         landmarks.extend([lm.x, lm.y, lm.z, lm.visibility])
@@ -37,7 +34,9 @@ def extract_landmarks(image_path):
 def main():
     header_written = False
 
-    with open(CSV_FILE, mode='w', newline='') as f:
+    with mp.solutions.pose.Pose(static_image_mode=True, min_detection_confidence=0.5) as pose, \
+         open(CSV_FILE, mode='w', newline='') as f:
+
         writer = csv.writer(f)
 
         for split in ["train", "valid", "test"]:
@@ -50,23 +49,21 @@ def main():
                     continue
 
                 for img_name in os.listdir(pose_folder):
-                    img_path = os.path.join(pose_folder, img_name)
+                    if not img_name.lower().endswith(IMAGE_EXTENSIONS):
+                        continue
 
-                    landmarks = extract_landmarks(img_path)
+                    img_path = os.path.join(pose_folder, img_name)
+                    landmarks = extract_landmarks(img_path, pose)
                     if landmarks is None:
                         continue
 
-                    # Write header (landmark1_x, landmark1_y, ... , label)
                     if not header_written:
-                        num_coords = len(landmarks)
-                        header = [f"{i}_{coord}" for i in range(1, 34) for coord in ["x", "y", "z", "v"]]
+                        header = [f"{i}_{axis}" for i in range(1, 34) for axis in ["x", "y", "z", "v"]]
                         header.append("label")
                         writer.writerow(header)
                         header_written = True
 
-                    # Write row: landmark values + label
                     writer.writerow(landmarks + [pose_name])
-
                     print(f"✅ Processed {img_name} → {pose_name}")
 
     print(f"\n🎯 Landmarks saved to {CSV_FILE}")
